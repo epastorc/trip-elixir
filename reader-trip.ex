@@ -22,7 +22,7 @@ defmodule Reader do
         IO.inspect "formatContent: #{formatContent}"
 
     else
-      IO.puts "El archivo no se encuentra"
+      IO.puts "File not found"
     end
   end
 end
