@@ -1,5 +1,26 @@
 defmodule Reader do
 
+  def get_processed_info(file_processed) do
+    IO.inspect file_processed
+
+    IO.puts file_processed |> Enum.reduce("", fn ( {k, v}, acc) ->
+      acc = acc <>
+       "TRIP to #{k}"
+      movements = v |> Enum.reduce("", fn ( segment, segmentAcc) ->
+        if segment["transport"] === "Hotel" do
+          segmentAcc = segmentAcc <>
+           "Hotel at #{segment["origin"]} on #{segment["dateOrigin"]} to #{segment["dateDestiny"]}"
+        else
+          segmentAcc = segmentAcc
+          <> "#{segment["transport"]} from #{segment["origin"]} to #{segment["destiny"]} at #{segment["dateDestiny"]} #{segment["hourOrigin"]} to #{segment["hourDestiny"]}"
+        end
+      end)
+      acc = acc
+       <> movements
+    end)
+
+  end
+
   def get_base_on(file_content) do
   match = Regex.named_captures(~r/.*BASED:\s*(?<based>[A-Z]{3})/, file_content)
 
@@ -25,15 +46,14 @@ defmodule Reader do
         |> tl()
         |> Enum.map(fn line -> format_item(line) end)
         |> Enum.group_by(fn x ->
-          if(x["destiny"]|> String.trim() === "") do
-            x["origin"]
-          else
-            x["destiny"]
+          cond do
+            x["destiny"] === based_on -> x["origin"]
+            String.trim(x["destiny"]) === "" -> x["origin"]
+            true -> x["destiny"]
           end
         end)
 
-IO.inspect formatContent
-
+        IO.puts get_processed_info formatContent
     else
       IO.puts "File not found"
     end
