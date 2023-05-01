@@ -4,15 +4,14 @@ defmodule Reader do
     IO.inspect file_processed
 
     IO.puts file_processed |> Enum.reduce("", fn ( {k, v}, acc) ->
-      acc = acc <>
-       "TRIP to #{k}"
+      acc = acc <> "\nTRIP to #{k}\n"
       movements = v |> Enum.reduce("", fn ( segment, segmentAcc) ->
         if segment["transport"] === "Hotel" do
           segmentAcc = segmentAcc <>
-           "Hotel at #{segment["origin"]} on #{segment["dateOrigin"]} to #{segment["dateDestiny"]}"
+           "Hotel at #{segment["origin"]} on #{segment["dateOrigin"]} to #{segment["dateDestiny"]}\n"
         else
           segmentAcc = segmentAcc
-          <> "#{segment["transport"]} from #{segment["origin"]} to #{segment["destiny"]} at #{segment["dateDestiny"]} #{segment["hourOrigin"]} to #{segment["hourDestiny"]}"
+          <> "#{segment["transport"]} from #{segment["origin"]} to #{segment["destiny"]} at #{segment["dateDestiny"]} #{segment["hourOrigin"]} to #{segment["hourDestiny"]}\n"
         end
       end)
       acc = acc
@@ -25,6 +24,49 @@ defmodule Reader do
   match = Regex.named_captures(~r/.*BASED:\s*(?<based>[A-Z]{3})/, file_content)
 
   match["based"]
+  end
+
+  def convert_date(booking) do
+    if booking["transport"] === "Hotel" do
+      DateTime.from_iso8601("#{booking["dateDestiny"]}T00:00:00Z")
+    else
+      DateTime.from_iso8601("#{booking["dateDestiny"]}T#{booking["hourDestiny"]}:00Z")
+    end
+
+  end
+
+  def sort_by_dates(bookingA, bookingB) do
+    {:ok, first_date, 0} = convert_date(bookingA)
+    {:ok, second_date, 0} = convert_date(bookingB)
+
+    result = Timex.compare(first_date,second_date, :minutes)
+
+    if result === 1, do: false, else: true
+  end
+
+  def add_trip(bookings, based_on) do
+
+    elem(Enum.reduce(bookings, {0, []}, fn(booking, bookingsAcc) ->
+
+      trip_index = elem(bookingsAcc, 0)
+      booking_trip = %{
+        "dateDestiny" => booking["dateDestiny"],
+        "dateOrigin" => booking["dateOrigin"],
+        "destiny" => booking["destiny"],
+        "hourDestiny" => booking["hourDestiny"],
+        "hourOrigin" => booking["hourOrigin"],
+        "origin" => booking["origin"],
+        "transport" => booking["transport"],
+        "trip" => trip_index
+      }
+
+      if(booking["destiny"] === based_on) do
+        bookingsAcc = {trip_index + 1, [booking_trip | elem(bookingsAcc, 1)] |> Enum.reverse}
+      else
+        bookingsAcc = {trip_index, [booking_trip | elem(bookingsAcc, 1)] |> Enum.reverse}
+      end
+    end), 1)
+
   end
 
   def format_item(line) do
@@ -45,15 +87,13 @@ defmodule Reader do
         |> String.split("SEGMENT:", trim: true)
         |> tl()
         |> Enum.map(fn line -> format_item(line) end)
-        |> Enum.group_by(fn x ->
-          cond do
-            x["destiny"] === based_on -> x["origin"]
-            String.trim(x["destiny"]) === "" -> x["origin"]
-            true -> x["destiny"]
-          end
-        end)
+        |> Enum.sort(fn bookingA, bookingB -> sort_by_dates(bookingA, bookingB) end)
 
-        IO.puts get_processed_info formatContent
+
+        contentWithTrip =  add_trip(formatContent, based_on)
+          |> Enum.group_by(fn x -> x["trip"] end)
+
+        IO.puts get_processed_info contentWithTrip
     else
       IO.puts "File not found"
     end
