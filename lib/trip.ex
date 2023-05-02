@@ -29,10 +29,11 @@ defmodule Reader do
   end
 
   def convert_date(booking) do
+
     if booking["transport"] === "Hotel" do
       DateTime.from_iso8601("#{booking["dateDestiny"]}T00:00:00Z")
     else
-      DateTime.from_iso8601("#{booking["dateDestiny"]}T#{booking["hourDestiny"]}:00Z")
+      DateTime.from_iso8601("#{booking["dateOrigin"]}T#{booking["hourDestiny"]}:00Z")
     end
 
   end
@@ -72,7 +73,7 @@ defmodule Reader do
   end
 
   def format_item(line) do
-    Regex.named_captures(~r/\s(?<transport>[A-Za-z]+)\s(?<origin>[A-Za-z]+)\s(?<dateDestiny>\d{4}-\d{2}-\d{2})\s?(?<hourOrigin>(\d{2}:\d{2})?)\s->\s?(?<dateOrigin>(\d{4}-\d{2}-\d{2})?)\s?(?<destiny>([A-Za-z]+)?)\s?(?<hourDestiny>(\d{2}:\d{2})?).*/, line)
+    Regex.named_captures(~r/\s(?<transport>[A-Za-z]+)\s(?<origin>[A-Za-z]+)\s(?<dateOrigin>\d{4}-\d{2}-\d{2})\s?(?<hourOrigin>(\d{2}:\d{2})?)\s->\s?(?<dateDestiny>(\d{4}-\d{2}-\d{2})?)\s?(?<destiny>([A-Za-z]+)?)\s?(?<hourDestiny>(\d{2}:\d{2})?).*/, line)
   end
 
   def read_file() do
