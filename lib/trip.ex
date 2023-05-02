@@ -1,18 +1,16 @@
 defmodule Reader do
 
   def get_processed_info(file_processed) do
-    IO.inspect file_processed
-
-    IO.puts file_processed |> Enum.reduce("", fn ( {k, v}, acc) ->
+    file_processed |> Enum.reduce("", fn ( {k, v}, acc) ->
       acc = acc <> "\nTRIP to #{k}\n"
       movements = v
       |> Enum.reverse
-      |> Enum.reduce("", fn ( segment, segmentAcc) ->
+      |> Enum.reduce("", fn ( segment, segment_acc) ->
         if segment["transport"] === "Hotel" do
-          segmentAcc = segmentAcc <>
+          segment_acc = segment_acc <>
            "Hotel at #{segment["origin"]} on #{segment["dateOrigin"]} to #{segment["dateDestiny"]}\n"
         else
-          segmentAcc = segmentAcc
+          segment_acc = segment_acc
           <> "#{segment["transport"]} from #{segment["origin"]} to #{segment["destiny"]} at #{segment["dateDestiny"]} #{segment["hourOrigin"]} to #{segment["hourDestiny"]}\n"
         end
       end)
@@ -49,9 +47,9 @@ defmodule Reader do
 
   def add_trip(bookings, based_on) do
 
-    elem(Enum.reduce(bookings, {0, []}, fn(booking, bookingsAcc) ->
+    elem(Enum.reduce(bookings, {0, []}, fn(booking, bookings_acc) ->
 
-      trip_index = elem(bookingsAcc, 0)
+      trip_index = elem(bookings_acc, 0)
       booking_trip = %{
         "dateDestiny" => booking["dateDestiny"],
         "dateOrigin" => booking["dateOrigin"],
@@ -64,9 +62,9 @@ defmodule Reader do
       }
 
       if(booking["destiny"] === based_on) do
-        bookingsAcc = {trip_index + 1, [booking_trip | elem(bookingsAcc, 1)]}
+        bookings_acc = {trip_index + 1, [booking_trip | elem(bookings_acc, 1)]}
       else
-        bookingsAcc = {trip_index, [booking_trip | elem(bookingsAcc, 1)]}
+        bookings_acc = {trip_index, [booking_trip | elem(bookings_acc, 1)]}
       end
     end), 1)
 
@@ -84,7 +82,7 @@ defmodule Reader do
 
       based_on = get_base_on(content)
 
-      IO.inspect formatContent = content
+      format_content = content
         |> String.replace("\r\n", "")
         |> String.replace("RESERVATION", "")
         |> String.split("SEGMENT:", trim: true)
@@ -93,10 +91,11 @@ defmodule Reader do
         |> Enum.sort(fn bookingA, bookingB -> sort_by_dates(bookingA, bookingB) end)
 
 
-        contentWithTrip = add_trip(formatContent, based_on)
+        contentWithTrip = add_trip(format_content, based_on)
           |> Enum.group_by(fn x -> x["trip"] end)
 
         IO.puts get_processed_info contentWithTrip
+        {:ok }
     else
       IO.puts "File not found"
     end
