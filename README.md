@@ -27,3 +27,11 @@ Flight from NYC to BOS at  08:00 to 09:25
 ## External dependencies
 
 * Timex to compare dates(only take into account until minutes) 
+
+## Test
+
+Run the command:
+
+```
+mix test
+```
